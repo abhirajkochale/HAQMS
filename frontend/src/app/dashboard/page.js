@@ -1149,7 +1149,7 @@ export default function Dashboard() {
  Staff Physicians Registry Lookup
  </h3>
  <p className="text-xs text-slate-500 font-semibold mt-1">
- Database lookup for credentials. Uses a raw SQL interpolation backend query.
+ Search and manage hospital physician credentials and availability.
  </p>
  </div>
 
@@ -1162,7 +1162,7 @@ export default function Dashboard() {
  type="text"
  value={adminSearchQuery}
  onChange={(e) => setAdminSearchQuery(e.target.value)}
- placeholder="Enter physician name search criteria (raw syntax supported)..."
+ placeholder="Enter physician name to search..."
  className="block w-full pl-9 pr-3 py-2 border border-slate-300 bg-white/50 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
  />
  </div>
@@ -1172,19 +1172,8 @@ export default function Dashboard() {
  disabled={physiciansLoading}
  className="glow-btn px-5 py-2 bg-slate-900 text-white font-bold text-xs rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
  >
- {physiciansLoading ? 'Executing...' : 'Execute SQL Query'}
+ {physiciansLoading ? 'Searching...' : 'Search'}
  </button>
- </div>
-
- <div className="p-3 bg-rose-500/10 text-rose-500 text-xs rounded-lg border border-rose-500/20 font-semibold leading-5 flex gap-3">
- <ShieldAlert className="h-5 w-5 shrink-0" />
- <div>
- <strong>SQL Vulnerability alert:</strong> This search executes raw interpolation: 
- <code className="block bg-black/10 p-1.5 rounded mt-1 font-mono">
- SELECT * FROM &quot;Doctor&quot; WHERE name ILIKE &apos;%&#123;query&#125;%&apos;
- </code>
- Can be audited by inputting standard SQL injection strings to leak full user login lists.
- </div>
  </div>
 
  {/* Doctors Result List */}
