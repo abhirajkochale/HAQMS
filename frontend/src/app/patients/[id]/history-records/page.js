@@ -12,7 +12,7 @@ export default function HistoryRecordsPage({ params }) {
   const resolvedParams = use(params);
   const patientId = resolvedParams.id;
   const router = useRouter();
-  const { token, user } = useAuth();
+  const { token, user, loading: authLoading } = useAuth();
   
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,10 +21,12 @@ export default function HistoryRecordsPage({ params }) {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:5000/api');
 
   useEffect(() => {
-    if (!token) {
+    if (!authLoading && !token) {
       router.push('/login');
       return;
     }
+    
+    if (authLoading) return;
 
     const fetchPatientData = async () => {
       try {

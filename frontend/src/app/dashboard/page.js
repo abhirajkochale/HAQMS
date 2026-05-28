@@ -11,15 +11,15 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
- const { user, token, API_BASE_URL, logout } = useAuth();
+ const { user, token, API_BASE_URL, logout, loading } = useAuth();
  const router = useRouter();
 
  // Navigation Guard
  useEffect(() => {
- if (!user) {
+ if (!loading && !user) {
  router.push('/login');
  }
- }, [user]);
+ }, [user, loading]);
 
  // Global State
  const [activeTab, setActiveTab] = useState(user?.role === 'ADMIN' ? 'reports' : user?.role === 'RECEPTIONIST' ? 'patients' : 'appointments');
