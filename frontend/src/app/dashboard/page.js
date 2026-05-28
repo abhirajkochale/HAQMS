@@ -97,12 +97,15 @@ export default function Dashboard() {
  }
  };
 
- // Trigger Patient List Fetch (Every keystroke trigger re-renders parent! - Performance bug)
- useEffect(() => {
- if (user.role === 'RECEPTIONIST' || user.role === 'ADMIN') {
- fetchPatients(1);
- }
- }, [patientSearch, patientGender]);
+  // Debounced Patient List Fetch to fix performance bug
+  useEffect(() => {
+    if (user.role === 'RECEPTIONIST' || user.role === 'ADMIN') {
+      const timer = setTimeout(() => {
+        fetchPatients(1);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [patientSearch, patientGender]);
 
  // Fetch Doctors for booking drop-down
  const fetchDoctorsDropdown = async () => {
@@ -923,12 +926,9 @@ export default function Dashboard() {
  <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-xs flex flex-col gap-4">
  <h4 className="font-bold text-slate-400 uppercase tracking-wider">Clinical Background Information</h4>
  
- {/* FRONTEND CRASH BUG:
- Assuming medicalHistory is always populated. Accesses a method on a nullable property
- without optional chaining! If medicalHistory is null (which is the case for Batman, Clark Kent, etc.),
- this code throws: "Cannot read properties of null (reading 'toUpperCase')" and crashes the app! */}
+ {/* FRONTEND CRASH BUG FIXED: Added optional chaining */}
  <p className="text-slate-700 leading-5 text-sm font-semibold">
- {selectedPatientHistory.medicalHistory.toUpperCase()}
+ {selectedPatientHistory.medicalHistory?.toUpperCase() || 'NO MEDICAL HISTORY ON RECORD'}
  </p>
  </div>
 

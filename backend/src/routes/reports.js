@@ -13,45 +13,47 @@ router.get('/doctor-stats', authenticate, async (req, res) => {
   try {
     const start = Date.now();
 
-    // 1. Fetch all doctors
-    const doctors = await prisma.doctor.findMany();
-    // 2. Fetch stats for all doctors concurrently!
+    // 1. Fetch doctors with their related counts and completed appointments for revenue
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const reportData = await Promise.all(
-      doctors.map(async (doc) => {
-        const [
-          totalAppointments,
-          completedAppointments,
-          cancelledAppointments,
-          queueTokensCount,
-          completedList,
-        ] = await Promise.all([
-          prisma.appointment.count({ where: { doctorId: doc.id } }),
-          prisma.appointment.count({ where: { doctorId: doc.id, status: 'COMPLETED' } }),
-          prisma.appointment.count({ where: { doctorId: doc.id, status: 'CANCELLED' } }),
-          prisma.queueToken.count({
-            where: { doctorId: doc.id, createdAt: { gte: today } },
-          }),
-          prisma.appointment.findMany({ where: { doctorId: doc.id, status: 'COMPLETED' } }),
-        ]);
+    const doctorsWithRelations = await prisma.doctor.findMany({
+      include: {
+        appointments: {
+          select: { status: true }
+        },
+        queueTokens: {
+          where: { createdAt: { gte: today } },
+          select: { id: true }
+        }
+      }
+    });
 
-        const revenue = completedList.length * doc.consultationFee;
+    const reportData = doctorsWithRelations.map(doc => {
+      const totalAppointments = doc.appointments.length;
+      let completedAppointments = 0;
+      let cancelledAppointments = 0;
 
-        return {
-          id: doc.id,
-          name: doc.name,
-          specialization: doc.specialization,
-          department: doc.department,
-          totalAppointments,
-          completedAppointments,
-          cancelledAppointments,
-          todayQueueSize: queueTokensCount,
-          revenue,
-        };
-      })
-    );
+      doc.appointments.forEach(apt => {
+        if (apt.status === 'COMPLETED') completedAppointments++;
+        if (apt.status === 'CANCELLED') cancelledAppointments++;
+      });
+
+      const queueTokensCount = doc.queueTokens.length;
+      const revenue = completedAppointments * doc.consultationFee;
+
+      return {
+        id: doc.id,
+        name: doc.name,
+        specialization: doc.specialization,
+        department: doc.department,
+        totalAppointments,
+        completedAppointments,
+        cancelledAppointments,
+        todayQueueSize: queueTokensCount,
+        revenue,
+      };
+    });
 
     const durationMs = Date.now() - start;
 

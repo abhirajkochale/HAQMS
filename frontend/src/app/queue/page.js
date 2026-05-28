@@ -31,23 +31,22 @@ export default function QueueMonitor() {
  }
  };
 
- useEffect(() => {
- const controller = new AbortController();
+  useEffect(() => {
+    const controller = new AbortController();
 
- // Initial fetch
- fetchQueueData(controller.signal);
+    // Initial fetch
+    fetchQueueData(controller.signal);
 
- const intervalId = setInterval(() => {
- console.log(`[POLL] Active Queue Poll #${refreshCount + 1} firing...`);
- fetchQueueData(controller.signal);
- setRefreshCount((prev) => prev + 1);
- }, 3000);
+    const intervalId = setInterval(() => {
+      console.log(`[POLL] Active Queue Poll firing...`);
+      fetchQueueData(controller.signal);
+    }, 3000);
 
- return () => {
- clearInterval(intervalId);
- controller.abort();
- };
- }, [refreshCount]);
+    return () => {
+      clearInterval(intervalId);
+      controller.abort();
+    };
+  }, []);
 
  // Group tokens by doctor
  const groupedTokens = tokens.reduce((groups, token) => {
