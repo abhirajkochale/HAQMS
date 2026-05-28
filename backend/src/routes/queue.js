@@ -1,6 +1,6 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { authenticate } = require('../middleware/auth');
+const { PrismaClient, Prisma } = require('@prisma/client');
+const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -26,16 +26,13 @@ router.get('/', authenticate, async (req, res) => {
 
     res.json(tokens);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve queue', details: error.message });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 // POST /api/queue/checkin
 // Generate a new queue token for a patient
-// CONCURRENCY/RACE CONDITION BUG: Token increment uses aggregate read followed by create.
-// Introduce a deliberate asynchronous delay (setTimeout) to force a wide race window
-// where concurrent check-ins assign the exact same token number.
-router.post('/checkin', authenticate, async (req, res) => {
+router.post('/checkin', authenticate, authorize(['RECEPTIONIST', 'ADMIN']), async (req, res) => {
   try {
     const { patientId, doctorId, appointmentId } = req.body;
 
@@ -46,38 +43,37 @@ router.post('/checkin', authenticate, async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Fetch current maximum token number for this doctor today
-    const maxTokenResult = await prisma.queueToken.aggregate({
-      where: {
-        doctorId,
-        createdAt: { gte: today },
-      },
-      _max: {
-        tokenNumber: true,
-      },
-    });
+    const newToken = await prisma.$transaction(async (tx) => {
+      // 1. Fetch current maximum token number for this doctor today
+      const maxTokenResult = await tx.queueToken.aggregate({
+        where: {
+          doctorId,
+          createdAt: { gte: today },
+        },
+        _max: {
+          tokenNumber: true,
+        },
+      });
 
-    const currentMax = maxTokenResult._max.tokenNumber || 0;
-    const nextTokenNumber = currentMax + 1;
+      const currentMax = maxTokenResult._max.tokenNumber || 0;
+      const nextTokenNumber = currentMax + 1;
 
-    // PERFORMANCE/CONCURRENCY BUG: Artificial sleep to widen the race condition window.
-    // In production under microservices or high load, network delay does this naturally.
-    // Junior developer comment: "Adding sleep to make sure db registers the record correctly before moving forward"
-    await new Promise((resolve) => setTimeout(resolve, 350));
-
-    // 2. Insert new token
-    const newToken = await prisma.queueToken.create({
-      data: {
-        tokenNumber: nextTokenNumber,
-        patientId,
-        doctorId,
-        appointmentId: appointmentId || null,
-        status: 'WAITING',
-      },
-      include: {
-        patient: true,
-        doctor: true,
-      },
+      // 2. Insert new token
+      return tx.queueToken.create({
+        data: {
+          tokenNumber: nextTokenNumber,
+          patientId,
+          doctorId,
+          appointmentId: appointmentId || null,
+          status: 'WAITING',
+        },
+        include: {
+          patient: true,
+          doctor: true,
+        },
+      });
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
 
     res.status(201).json({
@@ -86,13 +82,13 @@ router.post('/checkin', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Queue check-in error:', error);
-    res.status(500).json({ error: 'Check-in failed', details: error.message });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 // PATCH /api/queue/:id
 // Update token status (WAITING -> CALLING -> COMPLETED / SKIPPED)
-router.patch('/:id', authenticate, async (req, res) => {
+router.patch('/:id', authenticate, authorize(['RECEPTIONIST', 'ADMIN', 'DOCTOR']), async (req, res) => {
   try {
     const { status } = req.body;
 
@@ -111,7 +107,7 @@ router.patch('/:id', authenticate, async (req, res) => {
 
     res.json(updatedToken);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update queue token', details: error.message });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

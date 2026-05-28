@@ -12,10 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const router = useRouter();
 
-  // HARDCODED API VALUE: Intentionally hardcoding the backend base URL on the frontend!
-  // This violates production standards and prevents simple domain config, but serves as
-  // a perfect exercise for internship candidates to move to environment variables.
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     // Check for stored token and user on initialization
@@ -24,11 +21,19 @@ export const AuthProvider = ({ children }) => {
 
     if (storedToken && storedUser) {
       try {
+        const parsedUser = JSON.parse(storedUser);
+        if (!parsedUser || typeof parsedUser !== 'object') {
+          throw new Error('Malformed user data');
+        }
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setUser(parsedUser);
       } catch (e) {
         console.error('Failed to parse user details from localStorage', e);
-        logout();
+        localStorage.removeItem('haqms_token');
+        localStorage.removeItem('haqms_user');
+        setToken(null);
+        setUser(null);
+        router.push('/login');
       }
     }
     setLoading(false);
@@ -52,11 +57,9 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.error || 'Authentication failed');
       }
 
-      // Inconsistent API returns nested success format for login
-      const receivedToken = data.data.token;
-      const receivedUser = data.data.user;
+      const receivedToken = data.token;
+      const receivedUser = data.user;
 
-      // SECURITY ISSUE: Storing sensitive auth credentials directly in LocalStorage!
       localStorage.setItem('haqms_token', receivedToken);
       localStorage.setItem('haqms_user', JSON.stringify(receivedUser));
 
@@ -92,9 +95,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // If registration succeeds, log them in automatically or redirect to login.
-      // Notice inconsistency: signup API returns flat user structure inside "user"
-      // we can trigger login for them.
       return login(email, password);
     } catch (err) {
       setError(err.message);

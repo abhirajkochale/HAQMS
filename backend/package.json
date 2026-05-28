@@ -5,9 +5,11 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "build": "prisma generate",
     "dev": "nodemon src/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "node prisma/seed.js",
     "db:setup": "prisma migrate dev && node prisma/seed.js"
   },

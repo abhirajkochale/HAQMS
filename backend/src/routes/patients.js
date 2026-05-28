@@ -10,40 +10,33 @@ const prisma = new PrismaClient();
 router.get('/', authenticate, async (req, res) => {
   try {
     const { search, gender } = req.query;
-    
-    // Inefficient: Retrieve all matching rows without take/skip limits from the database.
-    // Scales poorly as patient directory grows.
-    const allPatients = await prisma.patient.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-
-    let filteredPatients = allPatients;
-
-    // In-memory filter for search (checks name/phone/email)
-    if (search) {
-      const query = search.toLowerCase();
-      filteredPatients = filteredPatients.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.phoneNumber.includes(query) ||
-          (p.email && p.email.toLowerCase().includes(query))
-      );
-    }
-
-    // In-memory filter for gender
-    if (gender && gender !== 'All') {
-      filteredPatients = filteredPatients.filter(
-        (p) => p.gender.toLowerCase() === gender.toLowerCase()
-      );
-    }
-
-    // In-memory pagination setup
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
-    const offset = (page - 1) * limit;
-    
-    const paginatedResult = filteredPatients.slice(offset, offset + limit);
-    const totalPages = Math.ceil(filteredPatients.length / limit);
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { phoneNumber: { contains: search } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (gender && gender !== 'All') {
+      where.gender = { equals: gender, mode: 'insensitive' };
+    }
+
+    const [paginatedResult, totalCount] = await Promise.all([
+      prisma.patient.findMany({
+        where,
+        take: limit,
+        skip,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.patient.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     // Inconsistent Response style
     res.json({
@@ -52,7 +45,7 @@ router.get('/', authenticate, async (req, res) => {
       pagination: {
         page,
         limit,
-        totalPatients: filteredPatients.length,
+        totalPatients: totalCount,
         totalPages,
       },
     });

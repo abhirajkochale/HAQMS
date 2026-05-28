@@ -15,8 +15,12 @@ const reportRoutes = require('./routes/reports');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS for all origins (weak/broad CORS config)
-app.use(cors());
+// Enable CORS with dynamic origin support
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+app.use(cors(corsOptions));
 
 // Body parser
 app.use(express.json());
