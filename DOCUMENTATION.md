@@ -62,3 +62,23 @@ Resolution: Wrapped all asynchronous client network fetch handlers inside standa
 Issue: Several performance-heavy user panels, including the live queue lists and medical worklists, lacked background loading indicators, causing the interface to freeze and appear broken to operators while awaiting server synchronization.
 
 Resolution: Integrated designated UI boolean loading indicators (worklistLoading and physiciansLoading) that dynamically render animated CSS loading spinners during fetch states, providing clear, real-time interactive feedback to the end-user.
+
+4.4 Client-Side Hydration and Hook Order Consistency
+Issue: Server Component layouts inappropriately wrapped Client-side Context Providers causing severe React #310 Hydration crashes. Additionally, asynchronous user state logic was placed structurally ahead of React hook initializations, breaking core component rendering lifecycles.
+
+Resolution: Decoupled global state into a dedicated `'use client'` Providers.js boundary and safely chained all hook initialization dependencies utilizing optional chaining while placing navigation guards sequentially after state bindings.
+
+4.5 Premature Authentication Navigation Guards
+Issue: Next.js routing interceptors in protected pages were triggering `/login` redirects during the fractional millisecond before the asynchronous AuthContext finalized loading the local storage session, aggressively forcing valid users out of the system.
+
+Resolution: Integrated an asynchronous `loading` dependency array into all route interceptors, enforcing a strict wait period for internal storage persistence checks to finalize before determining true unauthenticated states.
+
+4.6 Public API Boundary Definitions
+Issue: The Live Public Queue Monitor board failed with a 401 Unauthorized HTTP block because it attempted to poll the `/api/queue` endpoint without a bearer token, colliding with a blanket authenticate middleware assignment.
+
+Resolution: Reclassified the `GET /api/queue` endpoint as a public route structure by stripping the global authentication middleware, permitting frictionless public display board functionality without compromising mutative security.
+
+4.7 UI Legacy Diagnostic Sanitization
+Issue: Production-facing administrative dashboards displayed outdated vulnerability warnings simulating raw SQL injections, which were safely resolved during the Prisma ORM migration but left visually lingering in the interface.
+
+Resolution: Extracted and sanitized the dashboard Physician Registry component of all diagnostic placeholder text and warning elements, delivering a professional end-user view aligned with actual security posture.
