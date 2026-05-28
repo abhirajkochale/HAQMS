@@ -21,10 +21,8 @@ export default function Dashboard() {
  }
  }, [user]);
 
- if (!user) return null;
-
  // Global State
- const [activeTab, setActiveTab] = useState(user.role === 'ADMIN' ? 'reports' : user.role === 'RECEPTIONIST' ? 'patients' : 'appointments');
+ const [activeTab, setActiveTab] = useState(user?.role === 'ADMIN' ? 'reports' : user?.role === 'RECEPTIONIST' ? 'patients' : 'appointments');
 
  // ==========================================
  // STATE FOR RECEPTIONIST WORKFLOWS
@@ -386,6 +384,8 @@ export default function Dashboard() {
  setPhysiciansLoading(false);
  }
  };
+
+ if (!user) return null;
 
  return (
  <div className="min-h-screen flex flex-col">
