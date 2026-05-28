@@ -1,6 +1,6 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
+import Providers from './Providers';
 
 const inter = Inter({
  subsets: ['latin'],
@@ -20,9 +20,9 @@ export default function RootLayout({ children }) {
  <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
  </head>
  <body className={`${inter.variable} font-sans min-h-screen bg-slate-50`}>
- <AuthProvider>
+ <Providers>
  {children}
- </AuthProvider>
+ </Providers>
  </body>
  </html>
  );
