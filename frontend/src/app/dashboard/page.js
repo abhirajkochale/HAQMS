@@ -97,7 +97,7 @@ export default function Dashboard() {
 
   // Debounced Patient List Fetch to fix performance bug
   useEffect(() => {
-    if (user.role === 'RECEPTIONIST' || user.role === 'ADMIN') {
+    if (user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN') {
       const timer = setTimeout(() => {
         fetchPatients(1);
       }, 300);
@@ -199,7 +199,7 @@ export default function Dashboard() {
  if (res.ok) {
  setBookingMessage('Success: Appointment booked successfully!');
  setBookingReason('');
- if (user.role === 'DOCTOR') fetchDoctorWorklist();
+ if (user?.role === 'DOCTOR') fetchDoctorWorklist();
  } else {
  setBookingMessage(`Error: ${data.error || 'Failed to book'}`);
  }
@@ -243,7 +243,7 @@ export default function Dashboard() {
  const data = await res.json();
  if (res.ok) {
  setCheckinMessage(`Checked in! Generated Token #${data.token.tokenNumber}`);
- if (user.role === 'DOCTOR') fetchDoctorWorklist();
+ if (user?.role === 'DOCTOR') fetchDoctorWorklist();
  } else {
  setCheckinMessage(`Error check-in: ${data.error}`);
  }
@@ -256,12 +256,12 @@ export default function Dashboard() {
  // DOCTOR WORKFLOW FUNCTIONS
  // ==========================================
  const fetchDoctorWorklist = async () => {
- if (user.role !== 'DOCTOR') return;
+ if (user?.role !== 'DOCTOR') return;
  setWorklistLoading(true);
  setGlobalError('');
  try {
  // Find matching doctor from doctors dropdown using user ID link
- const matchedDoc = doctorsList.find(d => d.userId === user.id);
+ const matchedDoc = doctorsList.find(d => d.userId === user?.id);
  if (!matchedDoc) {
  setWorklistLoading(false);
  return;
@@ -294,7 +294,7 @@ export default function Dashboard() {
  };
 
  useEffect(() => {
- if (user.role === 'DOCTOR' && doctorsList.length > 0) {
+ if (user?.role === 'DOCTOR' && doctorsList.length > 0) {
  fetchDoctorWorklist();
  }
  }, [doctorsList]);
