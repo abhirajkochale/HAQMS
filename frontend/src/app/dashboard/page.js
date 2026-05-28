@@ -24,6 +24,13 @@ export default function Dashboard() {
  // Global State
  const [activeTab, setActiveTab] = useState(user?.role === 'ADMIN' ? 'reports' : user?.role === 'RECEPTIONIST' ? 'patients' : 'appointments');
 
+  // Fix initial activeTab state when user loads asynchronously
+  useEffect(() => {
+    if (user && activeTab === 'appointments' && user.role !== 'DOCTOR') {
+      setActiveTab(user.role === 'ADMIN' ? 'reports' : 'patients');
+    }
+  }, [user]);
+
  // ==========================================
  // STATE FOR RECEPTIONIST WORKFLOWS
  // ==========================================
