@@ -103,7 +103,7 @@ export default function Dashboard() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [patientSearch, patientGender]);
+  }, [patientSearch, patientGender, user, token]);
 
  // Fetch Doctors for booking drop-down
  const fetchDoctorsDropdown = async () => {
@@ -119,8 +119,10 @@ export default function Dashboard() {
  };
 
  useEffect(() => {
+ if (token) {
  fetchDoctorsDropdown();
- }, []);
+ }
+ }, [token]);
 
  // Handle Patient Registration
  const handleRegisterPatient = async (e) => {
@@ -297,7 +299,7 @@ export default function Dashboard() {
  if (user?.role === 'DOCTOR' && doctorsList.length > 0) {
  fetchDoctorWorklist();
  }
- }, [doctorsList]);
+ }, [doctorsList, user, token]);
 
  // Update token status (WAITING -> CALLING -> COMPLETED / SKIPPED)
  const handleUpdateQueueStatus = async (tokenId, newStatus) => {
